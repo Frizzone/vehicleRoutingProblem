@@ -1,5 +1,7 @@
 import math
 from collections import namedtuple
+import random
+import geneticAlgorithm.individual as ind
 
 Customer = namedtuple("Customer", ['index', 'demand', 'x', 'y'])
 
@@ -32,6 +34,28 @@ def bestTour(vehicle_tours, depot):
             minTour = vehicle_tours[i]
     return (minTour, minlen)
         
+#Create random tours
+def createRandomTours(customers, vehicle_count, vehicle_capacity):
+    individual = ind.Individual(customers, vehicle_count, vehicle_capacity)
+    customer_count = len(customers)
+    remaining_customers = set(customers[1:])
+    for v in range(0, vehicle_count):
+        capacity_remaining = vehicle_capacity
+        while sum([capacity_remaining >= customer.demand for customer in remaining_customers]) > 0:
+            used = set()
+            shuffled_customers = list(remaining_customers)
+            random.shuffle(shuffled_customers)
+            for customer in shuffled_customers:
+                if capacity_remaining >= customer.demand:
+                    capacity_remaining -= customer.demand
+                    insert = individual.addItemRoute(v, customer)
+                    if(not insert): print(str(customer.index))
+                    used.add(customer)
+            remaining_customers -= used
+                
+    for v_id in range(vehicle_count): individual.addItemRoute(v_id, customers[0])
+    if(min(individual.selected)== 0): return None
+    return individual
 
 def nearestNode(customers, customer, selected):
     nearestNode = 0
@@ -45,3 +69,18 @@ def nearestNode(customers, customer, selected):
     if nearestNode!=0: return customers[nearestNode]
     else: return None
     
+def randomizedNearestNode(customers, customer, selected):
+    bestCandidatesOrdered = []
+    customer_count = len(customers)
+    for i in range(customer_count):
+        if(selected[customers[i].index] == 0 and customers[i].index != 0):
+            l = length(customer, customers[i])
+            bestCandidatesOrdered.append((customers[i], l))
+    bestCandidatesOrdered.sort(key=lambda x:x[1], reverse=False)
+
+    #alfa 0%-20%
+    alfa = random.random()/5
+    size = math.ceil(alfa*len(bestCandidatesOrdered))
+    if(size > len(bestCandidatesOrdered)): size = len(bestCandidatesOrdered)
+    if(size == 0): return None
+    return random.choice(bestCandidatesOrdered[0:size])[0]
