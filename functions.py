@@ -1,7 +1,6 @@
 import math
 from collections import namedtuple
 import random
-import geneticAlgorithm.individual as ind
 
 Customer = namedtuple("Customer", ['index', 'demand', 'x', 'y'])
 
@@ -33,29 +32,27 @@ def bestTour(vehicle_tours, depot):
             minlen = actuallen
             minTour = vehicle_tours[i]
     return (minTour, minlen)
-        
-#Create random tours
-def createRandomTours(customers, vehicle_count, vehicle_capacity):
-    individual = ind.Individual(customers, vehicle_count, vehicle_capacity)
-    customer_count = len(customers)
-    remaining_customers = set(customers[1:])
-    for v in range(0, vehicle_count):
-        capacity_remaining = vehicle_capacity
-        while sum([capacity_remaining >= customer.demand for customer in remaining_customers]) > 0:
-            used = set()
-            shuffled_customers = list(remaining_customers)
-            random.shuffle(shuffled_customers)
-            for customer in shuffled_customers:
-                if capacity_remaining >= customer.demand:
-                    capacity_remaining -= customer.demand
-                    insert = individual.addItemRoute(v, customer)
-                    if(not insert): print(str(customer.index))
-                    used.add(customer)
-            remaining_customers -= used
-                
-    for v_id in range(vehicle_count): individual.addItemRoute(v_id, customers[0])
-    if(min(individual.selected)== 0): return None
-    return individual
+
+# calculate the capacity per distance unit
+def route_capacity_per_distance(vehicle_route, depot):
+    leng = 0
+    cap = 0
+    leng += length(depot,vehicle_route[0])
+    for i in range(0, len(vehicle_route)-1):
+        leng += length(vehicle_route[i],vehicle_route[i+1])
+        cap += vehicle_route[i].demand
+    leng += length(vehicle_route[-1],depot)
+    return (cap/leng)
+
+def best_tour(vehicle_tours, depot):
+    best_tour = vehicle_tours[0]
+    capacity_per_distance_best = route_capacity_per_distance(vehicle_tours[0], depot)
+    for i in range (1, len(vehicle_tours)):
+        capacity_per_distance = routeLen(vehicle_tours[i], depot)
+        if(capacity_per_distance_best<capacity_per_distance): 
+            capacity_per_distance_best = capacity_per_distance
+            best_tour = vehicle_tours[i]
+    return best_tour
 
 def nearestNode(customers, customer, selected):
     nearestNode = 0
@@ -68,6 +65,17 @@ def nearestNode(customers, customer, selected):
                 nearestNode = j
     if nearestNode!=0: return customers[nearestNode]
     else: return None
+
+def nearest_node(remaining_customers, customer, capacity_remaining):
+    nearestCustomer = None
+    minlength = 0
+    for next_customer in remaining_customers:
+        if capacity_remaining >= next_customer.demand:
+            l = length(customer, next_customer)
+            if(nearestCustomer == None or minlength > l): 
+                minlength = l
+                nearestCustomer = next_customer
+    return nearestCustomer
     
 def randomizedNearestNode(customers, customer, selected):
     bestCandidatesOrdered = []
